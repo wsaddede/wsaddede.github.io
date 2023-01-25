@@ -4,4 +4,4 @@ hello
 
 # Build setting
 markdown: kramdown
-theme: minima
+theme: Cayman
