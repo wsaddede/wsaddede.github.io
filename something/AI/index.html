@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>AI Consultation</title>
+  <script src="<https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js>"></script>
+  <script src="<https://cdn.jsdelivr.net/npm/vue/dist/vue.js>"></script>
+</head>
+<body>
+  <div id="app">
+    <div>
+      <label>您需要咨询什么问题？</label>
+      <input v-model="question" type="text">
+      <button @click="getResponse">提问</button>
+    </div>
+    <div>
+      <p>{{answer}}</p>
+      <button @click="speakAnswer">发音输出</button>
+    </div>
+  </div>
+  <script src="<https://cdn.openai.com/sdk/js/0.3.0/openai.js>"></script>
+  <script>
+    const app = new Vue({
+      el: '#app',
+      data: {
+        question: '',
+        answer: '',
+        engine: '',
+        openai_api_key: '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',
+        pyttsx3: '',
+        speechRate: 1,
+        speechVolume: 1
+      },
+      created: function() {
+        // 初始化语音合成引擎
+        this.pyttsx3 = window.speechSynthesis;
+        this.engine = new window.speechSynthesisUtterance();
+        this.engine.lang = 'en-US';
+        this.engine.rate = this.speechRate;
+        this.engine.volume = this.speechVolume;
+        // 设置OpenAI API密钥
+        openai.api_key = this.openai_api_key;
+      },
+      methods: {
+        getResponse: function() {
+          let self = this;
+          openai.Completion.create(
+            {
+              engine: "davinci",
+              prompt: self.question,
+              max_tokens: 60,
+            }
+          ).then(
+            function(response) {
+              self.answer = response.choices[0].text.trim();
+            }
+          )
+        },
+        speakAnswer: function() {
+          this.engine.text = this.answer;
+          this.pyttsx3.speak(this.engine);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
