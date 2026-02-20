@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam 游戏随机抽取器</title>
+    <style>
+        :root {
+            --primary-color: #171a21; /* Steam 深色背景 */
+            --accent-color: #66c0f4;  /* Steam 蓝色 */
+            --text-color: #c7d5e0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1b2838;
+            color: var(--text-color);
+            display: flex;
+            justify_content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--primary-color);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--accent-color);
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            background-color: #2a475e;
+            border: 1px solid #000;
+            border-radius: 4px;
+            color: #fff;
+            box-sizing: border-box; /* 确保 padding 不会撑大宽度 */
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to right, #47bfff 0%, #1a9fff 100%);
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+
+        #resultArea {
+            margin-top: 20px;
+            background-color: #00000033;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap; /* 保留换行 */
+            font-family: monospace;
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+        
+        .game-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .disclaimer {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Steam 游戏抽取器 🎲</h1>
+    
+    <div class="input-group">
+        <label for="apiKey">Steam Web API Key</label>
+        <input type="password" id="apiKey" placeholder="在此粘贴你的 API Key">
+    </div>
+
+    <div class="input-group">
+        <label for="steamId">Steam ID (64位数字)</label>
+        <input type="text" id="steamId" placeholder="例如: 76561198xxxxxxxxx">
+    </div>
+
+    <div class="input-group">
+        <label for="count">抽取数量</label>
+        <input type="number" id="count" value="3" min="1">
+    </div>
+
+    <button id="btnRun" onclick="fetchGames()">开始抽取</button>
+
+    <div id="resultArea"></div>
+    
+    <div class="disclaimer">
+        ⚠️ 注意：由于 Steam 限制，本网页使用了 CORS 代理服务。<br>请勿在公共场合使用含有敏感权限的 API Key。
+    </div>
+</div>
+
+<script>
+    async function fetchGames() {
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const steamId = document.getElementById('steamId').value.trim();
+        const count = parseInt(document.getElementById('count').value);
+        const resultArea = document.getElementById('resultArea');
+        const btn = document.getElementById('btnRun');
+
+        // 基础验证
+        if (!apiKey || !steamId) {
+            resultArea.innerHTML = '<span class="error">请填写 API Key 和 Steam ID</span>';
+            return;
+        }
+
+        // 界面状态更新
+        btn.disabled = true;
+        btn.innerText = "正在读取...";
+        resultArea.innerHTML = "正在连接 Steam 服务器...";
+
+        // Steam API URL
+        const targetUrl = `http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${apiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
+        
+        // 【关键】使用 CORS 代理
+        // 浏览器直接访问 Steam API 会被拒绝，必须通过代理。
+        // 这里使用 corsproxy.io 作为演示，它是一个公共代理。
+        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+
+        try {
+            const response = await fetch(proxyUrl);
+            
+            if (!response.ok) {
+                throw new Error(`网络请求失败: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // 数据解析逻辑
+            if (data.response && data.response.games) {
+                const games = data.response.games;
+                const total = games.length;
+                
+                // 随机抽取逻辑
+                const finalCount = Math.min(count, total);
+                const selectedGames = [];
+                // 简单的随机洗牌算法
+                const shuffled = [...games].sort(() => 0.5 - Math.random());
+                const selected = shuffled.slice(0, finalCount);
+
+                // 生成结果 HTML
+                let html = `<div style="color:#66c0f4; margin-bottom:10px">共找到 ${total} 款游戏，抽取 ${finalCount} 款：</div>`;
+                
+                selected.forEach(game => {
+                    html += `
+                        <div class="game-item">
+                            <span>${game.name}</span>
+                            <span style="color:#666">${game.appid}</span>
+                        </div>
+                    `;
+                });
+
+                resultArea.innerHTML = html;
+            } else if (data.response && !data.response.games) {
+                 resultArea.innerHTML = '<span class="error">未找到游戏。可能是 ID 错误，或者该用户的游戏库设置为“私密”。</span>';
+            } else {
+                resultArea.innerHTML = '<span class="error">返回数据格式异常。</span>';
+            }
+
+        } catch (error) {
+            console.error(error);
+            resultArea.innerHTML = `<span class="error">出错啦：${error.message}<br>如果一直是这个错误，可能是公共代理服务暂时不可用，或者 API Key 无效。</span>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "开始抽取";
+        }
+    }
+</script>
+
+</body>
+</html>
