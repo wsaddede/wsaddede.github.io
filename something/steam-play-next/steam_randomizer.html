@@ -3,282 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam 游戏随机抽取器</title>
+    <title>Steam 游戏抽取器</title>
     <style>
-        :root {
-            --primary-color: #171a21;
-            --accent-color: #66c0f4;
-            --text-color: #c7d5e0;
-            --success-color: #a4d007;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1b2838;
-            color: var(--text-color);
-            display: flex;
-            justify_content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background-color: var(--primary-color);
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 500px;
-        }
-
-        h1 {
-            color: #fff;
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .input-group {
-            margin-bottom: 1rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--accent-color);
-            font-weight: 500;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            background-color: #2a475e;
-            border: 1px solid #101216;
-            border-radius: 4px;
-            color: #fff;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--accent-color);
-            background-color: #3d5f7a;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(to right, #47bfff 0%, #1a9fff 100%);
-            border: none;
-            border-radius: 4px;
-            color: #fff;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
-
-        button:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
-        button:disabled {
-            background: #3d4450;
-            color: #888;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        #resultArea {
-            margin-top: 20px;
-            background-color: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 4px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .game-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #333;
-            transition: background 0.2s;
-        }
-
-        .game-item:last-child {
-            border-bottom: none;
-        }
-
-        .game-name {
-            color: #fff;
-            font-weight: 500;
-        }
-
-        .game-id {
-            color: #666;
-            font-size: 0.85em;
-            font-family: monospace;
-        }
-
-        .status-msg {
-            text-align: center;
-            padding: 10px;
-            color: #888;
-        }
-
-        .error {
-            color: #ff6b6b;
-            background: rgba(255, 107, 107, 0.1);
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-
-        .success-header {
-            color: var(--success-color);
-            margin-bottom: 10px;
-            font-size: 0.95em;
-            text-align: center;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
-        }
-
-        .disclaimer {
-            font-size: 0.75rem;
-            color: #555;
-            margin-top: 25px;
-            text-align: center;
-            line-height: 1.4;
-        }
+        body { font-family: sans-serif; background: #1b2838; color: #c7d5e0; display:flex; justify-content:center; padding-top: 50px;}
+        .container { background: #171a21; padding: 2rem; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1 { text-align: center; color: #fff; }
+        input { width: 100%; padding: 10px; margin: 10px 0; background: #2a475e; border: 1px solid #000; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #1a9fff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #47bfff; }
+        button:disabled { background: #555; }
+        #result { margin-top: 20px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; min-height: 50px;}
+        .game { padding: 5px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
+        .error { color: #ff6b6b; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🎮 Steam 游戏抽取器</h1>
-    
-    <div class="input-group">
-        <label for="apiKey">Steam Web API Key</label>
-        <input type="password" id="apiKey" placeholder="在此粘贴你的 Key (不保存，仅本次使用)">
-    </div>
-
-    <div class="input-group">
-        <label for="steamId">Steam ID (64位数字)</label>
-        <input type="text" id="steamId" placeholder="例如: 76561198xxxxxxxxx">
-    </div>
-
-    <div class="input-group">
-        <label for="count">抽取数量</label>
-        <input type="number" id="count" value="3" min="1" max="100">
-    </div>
-
-    <button id="btnRun" onclick="fetchGames()">🚀 开始随机抽取</button>
-
-    <div id="resultArea"></div>
-    
-    <div class="disclaimer">
-        ⚠️ 本网页使用公共代理 (corsproxy.io) 以解决跨域问题。<br>
-        您的 API Key 将通过代理服务器传输，请勿用于敏感环境。
-    </div>
+    <h1>Steam 游戏抽取器 🎲</h1>
+    <input type="password" id="apiKey" placeholder="Steam API Key">
+    <input type="text" id="steamId" placeholder="Steam ID (64位)">
+    <input type="number" id="count" value="3" min="1">
+    <button id="btn" onclick="run()">开始抽取</button>
+    <div id="result"></div>
+    <p style="font-size:12px; color:#666; text-align:center">Powered by Python Backend</p>
 </div>
 
 <script>
-    async function fetchGames() {
-        const apiKey = document.getElementById('apiKey').value.trim();
-        const steamId = document.getElementById('steamId').value.trim();
-        const countInput = document.getElementById('count');
-        const count = parseInt(countInput.value);
-        const resultArea = document.getElementById('resultArea');
-        const btn = document.getElementById('btnRun');
+    // ⚠️⚠️⚠️ 部署完后端后，把下面的地址换成你自己的！
+    // 格式例如: "https://my-steam-proxy.onrender.com"
+    const BACKEND_URL = "http://127.0.0.1:5000"; 
 
-        // 基础验证
-        if (!apiKey || !steamId) {
-            resultArea.innerHTML = '<div class="error">请务必填写 API Key 和 Steam ID。</div>';
-            return;
-        }
+    async function run() {
+        const apiKey = document.getElementById('apiKey').value;
+        const steamId = document.getElementById('steamId').value;
+        const count = document.getElementById('count').value;
+        const resultDiv = document.getElementById('result');
+        const btn = document.getElementById('btn');
 
-        if (isNaN(count) || count <= 0) {
-            resultArea.innerHTML = '<div class="error">请输入正确的抽取数量。</div>';
-            return;
-        }
+        if(!apiKey || !steamId) return alert("请填写完整");
 
-        // 锁定界面
         btn.disabled = true;
-        btn.innerText = "⏳ 连接 Steam 服务器中...";
-        resultArea.innerHTML = '<div class="status-msg">正在请求数据，请稍候...</div>';
-
-        // 1. 构建原始 Steam API 地址
-        const targetUrl = `http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${apiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
-        
-        // 2. 【关键】使用 CORS 代理包裹地址
-        // 使用 encodeURIComponent 确保原地址中的特殊符号不会破坏代理 URL 结构
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+        btn.innerText = "请求云端服务器中...";
+        resultDiv.innerHTML = "正在连接后端...";
 
         try {
-            // 3. 发送请求给代理
-            const response = await fetch(proxyUrl);
-            
-            if (!response.ok) {
-                throw new Error(`网络状态异常: ${response.status}`);
-            }
+            // 连接你的 Python 后端
+            const url = `${BACKEND_URL}/api/get_games?api_key=${apiKey}&steam_id=${steamId}`;
+            const res = await fetch(url);
+            const data = await res.json();
 
-            const data = await response.json();
+            if(data.error) throw new Error(data.error);
+            if(!data.response || !data.response.games) throw new Error("未找到游戏或权限不足");
 
-            // 4. 处理数据
-            if (data.response && data.response.games) {
-                const games = data.response.games;
-                const total = games.length;
-                
-                // 随机洗牌算法 (Fisher-Yates Shuffle 的简化版)
-                const shuffled = [...games].sort(() => 0.5 - Math.random());
-                const finalCount = Math.min(count, total);
-                const selected = shuffled.slice(0, finalCount);
+            const games = data.response.games;
+            const shuffled = games.sort(() => 0.5 - Math.random()).slice(0, count);
 
-                // 生成结果列表
-                let html = `<div class="success-header">🎉 成功！从 ${total} 款游戏中抽取了 ${finalCount} 款</div>`;
-                
-                selected.forEach(game => {
-                    html += `
-                        <div class="game-item">
-                            <span class="game-name">${game.name}</span>
-                            <span class="game-id">ID: ${game.appid}</span>
-                        </div>
-                    `;
-                });
+            let html = `<div style="color:#a4d007; margin-bottom:10px">成功！</div>`;
+            shuffled.forEach(g => {
+                html += `<div class="game"><span>${g.name}</span><span style="color:#666">${g.appid}</span></div>`;
+            });
+            resultDiv.innerHTML = html;
 
-                resultArea.innerHTML = html;
-            } else if (data.response && !data.response.games) {
-                 // 成功连接但没有游戏列表（通常是权限问题）
-                 resultArea.innerHTML = '<div class="error">未找到游戏数据。<br>可能原因：<br>1. 该用户的游戏库设置为了“私密”或“仅好友”。<br>2. 该用户确实没有游戏。</div>';
-            } else {
-                resultArea.innerHTML = '<div class="error">返回数据格式异常，无法解析。</div>';
-            }
-
-        } catch (error) {
-            console.error(error);
-            let errorMsg = error.message;
-            
-            // 尝试给出更友好的错误提示
-            if (errorMsg.includes("Failed to fetch")) {
-                errorMsg = "连接代理服务器失败。可能是网络问题，或者代理服务暂时不可用。";
-            }
-            
-            resultArea.innerHTML = `<div class="error">❌ 出错啦：${errorMsg}<br><br>建议：检查 API Key 是否正确，或稍后再试。</div>`;
+        } catch (e) {
+            resultDiv.innerHTML = `<div class="error">出错: ${e.message}<br>请检查 API Key 或后端地址配置。</div>`;
         } finally {
-            // 恢复按钮
             btn.disabled = false;
-            btn.innerText = "🚀 开始随机抽取";
+            btn.innerText = "开始抽取";
         }
     }
 </script>
