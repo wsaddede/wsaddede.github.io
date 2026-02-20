@@ -1,15 +1,15 @@
+# 文件路径: something/steam-play-next/backend/app.py
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import os
 
 app = Flask(__name__)
-# 允许跨域，这样你的 github.io 才能访问
-CORS(app) 
+CORS(app) # 允许跨域，这对 github.io 很重要
 
 @app.route('/')
 def home():
-    return "Steam Proxy is Running"
+    return "Steam Proxy is Running!"
 
 @app.route('/get_games', methods=['GET'])
 def get_games():
@@ -21,8 +21,11 @@ def get_games():
 
     url = "http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/"
     params = {
-        'key': api_key, 'steamid': steam_id, 'format': 'json',
-        'include_appinfo': True, 'include_played_free_games': True
+        'key': api_key, 
+        'steamid': steam_id, 
+        'format': 'json',
+        'include_appinfo': True, 
+        'include_played_free_games': True
     }
     
     try:
