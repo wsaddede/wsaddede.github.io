@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam 游戏随机抽取器</title>
+    <title>Steam 游戏抽取器</title>
     <style>
-        /* 简单的暗色主题样式 */
-        body { font-family: sans-serif; background: #1b2838; color: #c7d5e0; display:flex; flex-direction:column; align-items:center; padding-top: 50px;}
+        body { font-family: sans-serif; background: #1b2838; color: #c7d5e0; display:flex; justify-content:center; padding-top: 50px;}
         .container { background: #171a21; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         h1 { text-align: center; color: #fff; }
         input { width: 100%; padding: 10px; margin: 10px 0; background: #2a475e; border: 1px solid #000; color: #fff; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #1a9fff; color: white; border: none; cursor: pointer; font-weight: bold; margin-top:10px;}
         button:hover { background: #47bfff; }
         button:disabled { background: #555; }
-        #result { margin-top: 20px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; min-height: 50px;}
+        #result { margin-top: 20px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; min-height: 50px; overflow-wrap: break-word;}
         .game { padding: 5px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
-        .error { color: #ff6b6b; }
+        .error { color: #ff6b6b; font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -27,59 +26,62 @@
     <input type="number" id="count" value="3" min="1">
     <button id="btn" onclick="run()">开始抽取</button>
     <div id="result"></div>
+    <div style="font-size:12px; color:#666; text-align:center; margin-top:15px;">
+        后端服务部署在 Render 免费版，首次点击可能需等待1-2分钟唤醒。
+    </div>
 </div>
 
 <script>
-    async function run() {
-    // 1. 确保是 HTTPS，且去掉末尾斜杠
+    // ⚠️ 替换成你刚刚在 Render 生成的网址
+    // 不要带末尾的斜杠 /
     const BACKEND_URL = "https://steam-proxy-jm60.onrender.com"; 
-    
-    const apiKey = document.getElementById('apiKey').value.trim();
-    const steamId = document.getElementById('steamId').value.trim();
-    const count = document.getElementById('count').value;
-    const resultDiv = document.getElementById('result');
-    const btn = document.getElementById('btn');
 
-    if(!apiKey || !steamId) return alert("请填写完整信息");
+    async function run() {
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const steamId = document.getElementById('steamId').value.trim();
+        const count = document.getElementById('count').value;
+        const resultDiv = document.getElementById('result');
+        const btn = document.getElementById('btn');
 
-    btn.disabled = true;
-    btn.innerText = "正在连接云端 (若长时间无响应请刷新)...";
-    resultDiv.innerHTML = "正在连接后端服务器... <br>(注意：Render免费版首次唤醒可能需要1分钟，请耐心等待)";
+        if(!apiKey || !steamId) return alert("请填写完整信息");
 
-    try {
-        const url = `${BACKEND_URL}/get_games?api_key=${apiKey}&steam_id=${steamId}`;
-        console.log("正在请求:", url); // 在控制台打印 URL，方便你检查
+        btn.disabled = true;
+        btn.innerText = "正在唤醒后端 (请稍候)...";
+        resultDiv.innerHTML = "正在连接服务器...<br>Render 免费版冷启动通常需要 50-90 秒，请耐心等待，不要刷新页面。";
 
-        const res = await fetch(url);
-        
-        // 检查网络状态
-        if (!res.ok) {
-            throw new Error(`服务器返回错误: ${res.status} ${res.statusText}`);
+        try {
+            // 构造 URL
+            const url = `${BACKEND_URL}/get_games?api_key=${apiKey}&steam_id=${steamId}`;
+            console.log("请求地址:", url); // 用于调试
+
+            const res = await fetch(url);
+            
+            if (!res.ok) {
+                throw new Error(`Server Error: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            if(data.error) throw new Error(data.error);
+            if(!data.response || !data.response.games) throw new Error("未找到游戏数据 (可能是隐私设置或无游戏)");
+
+            const games = data.response.games;
+            const shuffled = games.sort(() => 0.5 - Math.random()).slice(0, count);
+
+            let html = `<div style="color:#a4d007; margin-bottom:10px; text-align:center">抽取成功！</div>`;
+            shuffled.forEach(g => {
+                html += `<div class="game"><span>${g.name}</span><span style="color:#666">${g.appid}</span></div>`;
+            });
+            resultDiv.innerHTML = html;
+
+        } catch (e) {
+            console.error(e);
+            resultDiv.innerHTML = `<div class="error">❌ 失败: ${e.message}<br><br>如果是 Failed to fetch，通常是后端还在唤醒中，请再试一次。</div>`;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "开始抽取";
         }
-
-        const data = await res.json();
-
-        if(data.error) throw new Error(data.error);
-        if(!data.response || !data.response.games) throw new Error("该用户没有公开的游戏或游戏数为0");
-
-        const games = data.response.games;
-        const shuffled = games.sort(() => 0.5 - Math.random()).slice(0, count);
-
-        let html = `<div style="color:#a4d007; margin-bottom:10px; text-align:center">成功抽取！</div>`;
-        shuffled.forEach(g => {
-            html += `<div class="game"><span>${g.name}</span><span style="color:#666">${g.appid}</span></div>`;
-        });
-        resultDiv.innerHTML = html;
-
-    } catch (e) {
-        console.error(e);
-        // 把具体错误显示在页面上，不再只显示"唤醒中"
-        resultDiv.innerHTML = `<div class="error">❌ 发生错误: ${e.message}<br><br>建议：按 F12 打开控制台查看详细红色报错。</div>`;
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "开始抽取";
     }
-}
 </script>
 
 </body>
