@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam 游戏随机抽取器</title>
+    <title>Steam 游戏随机抽取器 (直连版)</title>
     <style>
         :root {
-            --primary-color: #171a21; /* Steam 深色背景 */
-            --accent-color: #66c0f4;  /* Steam 蓝色 */
+            --primary-color: #171a21;
+            --accent-color: #66c0f4;
             --text-color: #c7d5e0;
         }
 
@@ -54,7 +54,7 @@
             border: 1px solid #000;
             border-radius: 4px;
             color: #fff;
-            box-sizing: border-box; /* 确保 padding 不会撑大宽度 */
+            box-sizing: border-box;
         }
 
         input:focus {
@@ -91,7 +91,7 @@
             border-radius: 4px;
             max-height: 300px;
             overflow-y: auto;
-            white-space: pre-wrap; /* 保留换行 */
+            white-space: pre-wrap;
             font-family: monospace;
         }
 
@@ -139,7 +139,7 @@
     <div id="resultArea"></div>
     
     <div class="disclaimer">
-        ⚠️ 注意：由于 Steam 限制，本网页使用了 CORS 代理服务。<br>请勿在公共场合使用含有敏感权限的 API Key。
+        ⚠️ 注意：已移除代理。<br>请确保使用了“Allow CORS”浏览器插件，否则无法连接。
     </div>
 </div>
 
@@ -151,27 +151,21 @@
         const resultArea = document.getElementById('resultArea');
         const btn = document.getElementById('btnRun');
 
-        // 基础验证
         if (!apiKey || !steamId) {
             resultArea.innerHTML = '<span class="error">请填写 API Key 和 Steam ID</span>';
             return;
         }
 
-        // 界面状态更新
         btn.disabled = true;
         btn.innerText = "正在读取...";
-        resultArea.innerHTML = "正在连接 Steam 服务器...";
+        resultArea.innerHTML = "正在直接连接 Steam 服务器...";
 
-        // Steam API URL
+        // 直接构建 Steam API 的 URL
         const targetUrl = `http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${apiKey}&steamid=${steamId}&format=json&include_appinfo=true&include_played_free_games=true`;
-        
-        // 【关键】使用 CORS 代理
-        // 浏览器直接访问 Steam API 会被拒绝，必须通过代理。
-        // 这里使用 corsproxy.io 作为演示，它是一个公共代理。
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
 
         try {
-            const response = await fetch(proxyUrl);
+            // 直接 Fetch，不再经过代理
+            const response = await fetch(targetUrl);
             
             if (!response.ok) {
                 throw new Error(`网络请求失败: ${response.status}`);
@@ -179,19 +173,15 @@
 
             const data = await response.json();
 
-            // 数据解析逻辑
             if (data.response && data.response.games) {
                 const games = data.response.games;
                 const total = games.length;
                 
-                // 随机抽取逻辑
+                // 随机抽取
                 const finalCount = Math.min(count, total);
-                const selectedGames = [];
-                // 简单的随机洗牌算法
                 const shuffled = [...games].sort(() => 0.5 - Math.random());
                 const selected = shuffled.slice(0, finalCount);
 
-                // 生成结果 HTML
                 let html = `<div style="color:#66c0f4; margin-bottom:10px">共找到 ${total} 款游戏，抽取 ${finalCount} 款：</div>`;
                 
                 selected.forEach(game => {
@@ -212,7 +202,8 @@
 
         } catch (error) {
             console.error(error);
-            resultArea.innerHTML = `<span class="error">出错啦：${error.message}<br>如果一直是这个错误，可能是公共代理服务暂时不可用，或者 API Key 无效。</span>`;
+            // 这里给用户更详细的错误提示，因为去掉代理后，99%的情况是 CORS 错误
+            resultArea.innerHTML = `<span class="error">出错啦：${error.message}<br><br><strong>可能的原因：</strong><br>1. 浏览器拦截了跨域请求 (CORS Error)。请安装并开启 'Allow CORS' 插件。<br>2. 网络不通。<br>3. API Key 填写错误。</span>`;
         } finally {
             btn.disabled = false;
             btn.innerText = "开始抽取";
