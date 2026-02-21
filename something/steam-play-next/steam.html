@@ -3,83 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Steam 游戏抽取器</title>
+    <title>Steam 游戏时光机 Pro</title>
     <style>
-        body { font-family: sans-serif; background: #1b2838; color: #c7d5e0; display:flex; justify-content:center; padding-top: 50px;}
-        .container { background: #171a21; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        h1 { text-align: center; color: #fff; }
-        input { width: 100%; padding: 10px; margin: 10px 0; background: #2a475e; border: 1px solid #000; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #1a9fff; color: white; border: none; cursor: pointer; font-weight: bold; margin-top:10px;}
-        button:hover { background: #47bfff; }
-        button:disabled { background: #555; }
-        #result { margin-top: 20px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; min-height: 50px; overflow-wrap: break-word;}
-        .game { padding: 5px 0; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
-        .error { color: #ff6b6b; font-size: 0.9em; }
+        :root {
+            --bg-color: #1b2838;
+            --card-bg: #171a21;
+            --text-main: #c7d5e0;
+            --text-highlight: #66c0f4;
+            --btn-color: #1a9fff;
+            --btn-hover: #47bfff;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1 { text-align: center; color: #fff; margin-bottom: 20px; text-shadow: 0 0 10px rgba(102, 192, 244, 0.5); }
+
+        .input-group { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        
+        label { display: block; margin-bottom: 5px; color: var(--text-highlight); font-size: 0.9em; }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #2a475e;
+            border: 1px solid #101216;
+            color: #fff;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border 0.3s;
+        }
+        input:focus { border-color: var(--text-highlight); outline: none; }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, var(--btn-color), var(--btn-hover));
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: transform 0.1s;
+        }
+        button:hover { filter: brightness(1.1); }
+        button:active { transform: scale(0.98); }
+        button:disabled { background: #555; cursor: wait; }
+
+        /* 结果展示区 */
+        #resultArea { margin-top: 10px; display: flex; flex-direction: column; gap: 20px; }
+
+        .game-card {
+            background: #101215;
+            border: 1px solid #333;
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .game-img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .game-info { padding: 15px; }
+
+        .game-title {
+            font-size: 1.2em;
+            color: #fff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .game-id { font-size: 0.8em; color: #666; margin-bottom: 10px; display: block; }
+
+        .game-desc {
+            font-size: 0.9em;
+            color: #aaa;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            background: #1b2838;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .launch-btn {
+            display: block;
+            text-align: center;
+            background: #a4d007;
+            color: #fff;
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .launch-btn:hover { background: #86aa05; }
+
+        .status-msg { text-align: center; color: #888; font-size: 0.9em; margin-top: 10px; }
+        .error { color: #ff6b6b; background: rgba(255,107,107,0.1); padding: 10px; border-radius: 4px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Steam 游戏抽取器 🎲</h1>
-    <input type="password" id="apiKey" placeholder="粘贴 Steam API Key">
-    <input type="text" id="steamId" placeholder="粘贴 Steam ID (64位)">
-    <input type="text" id="count" placeholder="请输入要抽取几个游戏，不能小于1">
-    <button id="btn" onclick="run()">开始抽取</button>
-    <div id="result"></div>
-    <div style="font-size:12px; color:#666; text-align:center; margin-top:15px;">
-        后端服务部署在 Render 免费版，首次点击可能需等待1-2分钟唤醒。
+    <h1>Steam 游戏时光机 Pro 🎮</h1>
+    
+    <div class="input-group">
+        <label>Steam API Key</label>
+        <input type="password" id="apiKey" placeholder="在此粘贴 API Key">
+        
+        <label>Steam ID (64位)</label>
+        <input type="text" id="steamId" placeholder="在此粘贴 Steam ID">
+        
+        <label>抽取数量</label>
+        <input type="text" id="count" placeholder="在此输入需要抽取几个游戏，数字不能小于1">
+
+        <button id="btn" onclick="run()">🚀 开始随机抽取</button>
+        <div id="status" class="status-msg">
+            后端服务部署在 Render 免费版，首次点击可能需等待 1 分钟唤醒。
+        </div>
     </div>
+
+    <div id="resultArea"></div>
 </div>
 
 <script>
-    // ⚠️ 替换成你刚刚在 Render 生成的网址
-    // 不要带末尾的斜杠 /
+    // ⚠️ 你的 Render 地址 
     const BACKEND_URL = "https://steam-proxy-jm60.onrender.com"; 
+
+    // --- 页面加载时：读取本地存储 ---
+    window.onload = function() {
+        const savedKey = localStorage.getItem('steam_api_key');
+        const savedId = localStorage.getItem('steam_id');
+        const savedCount = localStorage.getItem('steam_count');
+
+        if(savedKey) document.getElementById('apiKey').value = savedKey;
+        if(savedId) document.getElementById('steamId').value = savedId;
+        if(savedCount) document.getElementById('count').value = savedCount;
+    }
 
     async function run() {
         const apiKey = document.getElementById('apiKey').value.trim();
         const steamId = document.getElementById('steamId').value.trim();
         const count = document.getElementById('count').value;
-        const resultDiv = document.getElementById('result');
+        const resultArea = document.getElementById('resultArea');
+        const statusDiv = document.getElementById('status');
         const btn = document.getElementById('btn');
 
         if(!apiKey || !steamId) return alert("请填写完整信息");
 
+        // --- 保存输入到本地存储 ---
+        localStorage.setItem('steam_api_key', apiKey);
+        localStorage.setItem('steam_id', steamId);
+        localStorage.setItem('steam_count', count);
+
+        // UI 状态更新
         btn.disabled = true;
-        btn.innerText = "正在唤醒后端 (请稍候)...";
-        resultDiv.innerHTML = "正在连接服务器...<br>Render 免费版冷启动通常需要 50-90 秒，请耐心等待，不要刷新页面。";
+        btn.innerText = "正在连接云端...";
+        statusDiv.innerText = "正在获取游戏列表...";
+        resultArea.innerHTML = ""; // 清空旧结果
 
         try {
-            // 构造 URL
-            const url = `${BACKEND_URL}/get_games?api_key=${apiKey}&steam_id=${steamId}`;
-            console.log("请求地址:", url); // 用于调试
-
-            const res = await fetch(url);
+            // 1. 获取所有游戏列表
+            const listUrl = `${BACKEND_URL}/get_games?api_key=${apiKey}&steam_id=${steamId}`;
+            const res = await fetch(listUrl);
             
-            if (!res.ok) {
-                throw new Error(`Server Error: ${res.status}`);
-            }
-
+            if (!res.ok) throw new Error(`Server Error: ${res.status}`);
             const data = await res.json();
 
             if(data.error) throw new Error(data.error);
             if(!data.response || !data.response.games) throw new Error("未找到游戏数据 (可能是隐私设置或无游戏)");
 
             const games = data.response.games;
-            const shuffled = games.sort(() => 0.5 - Math.random()).slice(0, count);
+            // 随机逻辑
+            const finalCount = Math.min(count, games.length);
+            const shuffled = games.sort(() => 0.5 - Math.random()).slice(0, finalCount);
 
-            let html = `<div style="color:#a4d007; margin-bottom:10px; text-align:center">抽取成功！</div>`;
-            shuffled.forEach(g => {
-                html += `<div class="game"><span>${g.name}</span><span style="color:#666">${g.appid}</span></div>`;
-            });
-            resultDiv.innerHTML = html;
+            statusDiv.innerText = `成功选中 ${finalCount} 款游戏，正在加载详细信息...`;
+
+            // 2. 遍历选中的游戏，逐个渲染卡片
+            for (const game of shuffled) {
+                await renderGameCard(game, resultArea);
+            }
+
+            statusDiv.innerText = "✅ 抽取完成！";
 
         } catch (e) {
             console.error(e);
-            resultDiv.innerHTML = `<div class="error">❌ 失败: ${e.message}<br><br>如果是 Failed to fetch，通常是后端还在唤醒中，请再试一次。</div>`;
+            resultArea.innerHTML = `<div class="error">❌ 出错: ${e.message}<br>如果是 Failed to fetch，请多试几次唤醒后端。</div>`;
+            statusDiv.innerText = "发生错误";
         } finally {
             btn.disabled = false;
-            btn.innerText = "开始抽取";
+            btn.innerText = "🚀 开始随机抽取";
+        }
+    }
+
+    // 渲染单个游戏卡片的函数
+    async function renderGameCard(game, container) {
+        // 创建卡片结构
+        const card = document.createElement('div');
+        card.className = 'game-card';
+        
+        // 占位内容
+        card.innerHTML = `
+            <div style="padding:20px; color:#aaa;">正在加载 ${game.name}...</div>
+        `;
+        container.appendChild(card);
+
+        try {
+            // 并行获取：图片(直接加载) + 简介(查后端)
+            // 图片 URL (Steam CDN 不需要代理)
+            const imgUrl = `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${game.appid}/header.jpg`;
+            
+            // 获取简介 (调用你的新后端接口)
+            const detailUrl = `${BACKEND_URL}/get_game_details?appid=${game.appid}`;
+            const detailRes = await fetch(detailUrl);
+            const detailData = await detailRes.json();
+            const desc = detailData.description || "暂无简介";
+
+            // 更新卡片 HTML
+            card.innerHTML = `
+                <img src="${imgUrl}" class="game-img" alt="${game.name}" onerror="this.src='https://via.placeholder.com/460x215?text=No+Image'">
+                <div class="game-info">
+                    <div class="game-title">${game.name}</div>
+                    <span class="game-id">AppID: ${game.appid}</span>
+                    <div class="game-desc">${desc}</div>
+                    <a href="steam://run/${game.appid}" class="launch-btn">🎮 立即启动</a>
+                </div>
+            `;
+        } catch (err) {
+            console.error("加载详情失败", err);
+            // 即使详情加载失败，至少显示基本信息
+            card.innerHTML = `
+                <div class="game-info">
+                    <div class="game-title">${game.name}</div>
+                    <div class="game-desc">详情加载失败</div>
+                    <a href="steam://run/${game.appid}" class="launch-btn">🎮 立即启动</a>
+                </div>
+            `;
         }
     }
 </script>
